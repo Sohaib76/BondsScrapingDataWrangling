@@ -14,6 +14,14 @@ import time
 import pycountry
 import math
 
+#Output, Production Output Checked
+#Shortlisted , Prod Shortlisted Correct
+#Try countries with space in name, or ajeeb sa name
+
+#Checked except quarterly insights
+#Uncomment vefore sharing script , go through
+
+
 
 
 # x = pycountry.countries.get(alpha_2='KR')
@@ -179,9 +187,13 @@ def getCountryAbbr(input_country):
     return code
 
 
-def renameCountry(input_name,over):    
+def renameCountry(input_name,over):
+        # print(input_name,"------")   
         if "Treasury Spread" in input_name and "Overnight" not in input_name:
-            x = re.search("Of (.+)_(.+) (\d+)-*(.+)", input_name)
+
+            # print(input_name,"---------")
+            x = re.search("Of (.+)_(.+) (\d+)-*(.+) Over", input_name)
+            # print(x.group(1)[0],"..............")
             field = x.group(1)[0]
             country = getCountryAbbr(x.group(2))
             yearOrmonthVal = x.group(3)
@@ -190,8 +202,10 @@ def renameCountry(input_name,over):
             overYear = a.group(2)[0]
             overYearVal = a.group(1)
 
+            
+
             output = "{0}_{1}_TS{2}{3}B_VS_{4}{5}B".format(country,field,yearOrmonthVal,yearOrmonth,overYearVal,overYear)
-           
+            #SAMPLE OUTPUT Unknown code_P_TS1YB_VS_1YB
             return output
         elif "Overnight" in input_name and "Treasury Spread" in input_name:
             x = re.search("Of (.+)_(.+) Overnight", input_name)
@@ -220,11 +234,11 @@ def renameCountry(input_name,over):
             return output
 
 
-def globalRename(df1,df2):
+def globalRename(df1,df2,inc):
   global dataDictd
   global dataDictx
 
-  over = df1.columns[1]
+  over = df1.columns[1+inc]
   renamed = []
   renamex = []
   for i in df2.columns[1:]:
@@ -246,10 +260,14 @@ def globalRename(df1,df2):
   copy_df2.columns = renamed
   return copy_df1,copy_df2
 
-def globalRename_withoutIndex(df1,df2):
+def globalRename_withoutIndex(df1,df2,inc):
   short_dataDic = []
   short_dataDictx = []
-  over = df1.columns[0]
+  # print(df1)
+  # print(df2)
+  over = df1.columns[0+inc]
+  # print(over, inc)
+  # exit()
   renamed = []
   renamex = []
   for i in df2.columns[0:]:
@@ -280,7 +298,485 @@ def sortByDate(result):
   return sorted_df
 
 
-#Fucntion to create TreasurySpreads for every country
+
+
+
+
+
+
+#---------------Fucntions Inside
+def extractingTreasurySpreads(bonds,inc):
+  
+  c=0
+  print(len(bonds))
+  for x in range(0,len(bonds)):
+        if x == 0:
+          currNum = dd[key][x+(3+inc)]
+          againstNum = dd[key][(x+(3+inc)-2)].split(" ")[-5]
+          bonds[x] = bonds[x].rename(columns={'Price':'Treasury Spread Of Price_{0} Over {1} Bond Yeild'.format(currNum,againstNum),
+            'Change %':'Treasury Spread Of Change %_{0} Over {1} Bond Yeild'.format( currNum,againstNum),
+            'High':'Treasury Spread Of High_{0} Over {1} Bond Yeild'.format(currNum,againstNum),
+            'Low':'Treasury Spread Of Low_{0} Over {1} Bond Yeild'.format(currNum,againstNum),
+            'Open':'Treasury Spread Of Open_{0} Over {1} Bond Yeild'.format(currNum,againstNum)
+                                })
+          c = x+(3+inc)
+        else:
+          new = c+2
+          agains = dd[key][inc+1].split(" ")[-5]
+
+          #agains = dd[key][new-2].split(" ")[-5]
+
+          # new = c+(2+inc)
+          #agains = dd[key][c-2].split(" ")[-5]
+          # agains = dd[key][inc+2].split(" ")[-5]
+          # print(c, key)
+          print(new)
+          print(agains)
+          # print(dd[key][new], "against", dd[key][inc+1])
+          #exit()
+          bonds[x] = bonds[x].rename(columns={'Price':'Treasury Spread Of Price_{0} Over {1} Bond Yeild'.format(dd[key][new],agains),
+            'Change %':'Treasury Spread Of Change %_{0} Over {1} Bond Yeild'.format(dd[key][new], agains),
+            'High':'Treasury Spread Of High_{0} Over {1} Bond Yeild'.format(dd[key][new],agains),
+            'Low':'Treasury Spread Of Low_{0} Over {1} Bond Yeild'.format(dd[key][new],agains),
+            'Open':'Treasury Spread Of Open_{0} Over {1} Bond Yeild'.format(dd[key][new],agains)
+                                })
+          c = new
+
+  
+  
+  
+
+  if len(bonds) == 2:
+    result = pd.merge(bonds[0],bonds[1],on=["Date"] , how="outer")
+    result = result[~result.index.duplicated()]
+    result = result.fillna(value="na")
+    
+  elif len(bonds) == 1:
+    result = bonds[0]
+  else:
+    
+    result = ''
+    for i in range(0,len(bonds)):  #for i in range(0,len(bonds),2):
+      
+      if i == 0:
+        result = pd.merge(bonds[i],bonds[i+1],on=["Date"] , how="outer")
+        result = result[~result.index.duplicated()]
+        result = result.fillna(value="na")
+      elif i == 1:
+        continue
+      else:
+        result = pd.merge(result,bonds[i], on=["Date"] , how="outer")
+        result = result[~result.index.duplicated()]
+        result = result.fillna(value="na")
+  
+  #Rearranging Columns
+  x = result.columns[0:-1:5]
+  y = result.columns[1:-1:5]
+  z = result.columns[2:-1:5]
+  a = result.columns[3:-1:5]
+  b = result.columns[4::5]
+  
+  xy = list(x)+list(y)+list(z)+list(a)+list(b)
+  result = result[xy]
+
+
+  #Sorting Columns By Date
+  sorted_df = sortByDate(result)
+  print(sorted_df,"...............................................")
+
+ 
+  sorted_df.columns = sorted_df.columns.str.replace('.csv', '')
+
+  return result,sorted_df
+
+def extractingTreasuryYeilds(nbonds):
+  bonxs = [i for i in nbonds]
+  print(len(bonxs))
+  c=0
+  for x in range(0,len(bonxs)):
+        if x == 0:
+
+          bonxs[x] = bonxs[x].rename(columns={'Price':'Price_{0}'.format(dd[key][x+1]),
+            'Change %':'Change %_{0}'.format(dd[key][x+1]),'High':'High_{0}'.format(dd[key][x+1]),
+            'Low':'Low_{0}'.format(dd[key][x+1]),'Open':'Open_{0}'.format(dd[key][x+1])
+                                })
+          c = x+1
+        else:
+          new = c+2
+          bonxs[x] = bonxs[x].rename(columns={'Price':'Price_{0}'.format(dd[key][new]),
+            'Change %':'Change %_{0}'.format(dd[key][new]),'High':'High_{0}'.format(dd[key][new]),
+            'Low':'Low_{0}'.format(dd[key][new]),'Open':'Open_{0}'.format(dd[key][new])
+                                })
+          c = new
+
+  if len(bonxs) == 2:
+    # resulx = pd.DataFrame.drop_duplicates(pd.merge(bonxs[0],bonxs[1],on=["Date"] , how="outer"))
+    resulx = pd.merge(bonxs[0],bonxs[1],on=["Date"] , how="outer")
+    resulx = resulx[~resulx.index.duplicated()]
+    
+  elif len(bonxs) == 1:
+    resulx = bonxs[0]
+  else:
+    
+    resulx = ''
+    for i in range(0,len(bonxs)):
+      
+      if i == 0:
+        resulx = pd.merge(bonxs[i],bonxs[i+1],on=["Date"] , how="outer")
+        resulx = resulx[~resulx.index.duplicated()]
+      elif i == 1:
+        continue
+      else:        
+        resulx = pd.merge(resulx,bonxs[i], on=["Date"] , how="outer")
+        resulx = resulx[~resulx.index.duplicated()]
+  
+  b = resulx.columns[:]
+  
+  resulx[b] =  resulx[b].fillna(value="na")
+
+  x = resulx.columns[0:-1:5]
+  y = resulx.columns[1:-1:5]
+  z = resulx.columns[2:-1:5]
+  a = resulx.columns[3:-1:5]
+  b = resulx.columns[4::5]
+  
+  xy = list(x)+list(y)+list(z)+list(a)+list(b)
+  
+  resulx = resulx[xy]
+  sortex_df = sortByDate(resulx)
+
+  
+  sortex_df.columns = sortex_df.columns.str.replace('.csv', '')
+
+  return resulx,sortex_df
+
+
+def shortlistedYeild(resulx):
+    y = len(list(resulx.columns))/5
+    x = resulx.columns[0:int(y)]
+    xy = list(x)
+    mod_resulx = resulx[xy]
+    shortlist_sortex_df = sortByDate(mod_resulx)
+    shortlist_sortex_df.columns = shortlist_sortex_df.columns.str.replace('.csv', '')
+    #print(shortlist_sortex_df, "chcek")
+    #Almost done
+    return shortlist_sortex_df
+
+def shortlistedSpread(result):
+
+    #---------For Spread
+    # x = result.columns[0:-1:5]
+    y = len(list(result.columns))/5
+    x = result.columns[0:int(y)]
+    xy = list(x)
+    mod_result = result[xy]
+   
+    neg_mod_result = mod_result.replace("na",0)
+    neg_mod_result = neg_mod_result.mask(neg_mod_result >= 0, 0)
+    neg_mod_result = neg_mod_result.mask(neg_mod_result < 0, 1)
+    #Renaming Column  Name
+    neg_mod_result=neg_mod_result.add_prefix("Incidences Of Negative ")
+    
+    final_mod_result = pd.concat([mod_result, neg_mod_result], axis=1)
+
+
+
+    shortlist_sorted_df = sortByDate(final_mod_result)
+    shortlist_sorted_df.columns = shortlist_sorted_df.columns.str.replace('.csv', '')
+    print(shortlist_sorted_df)
+    return shortlist_sorted_df
+
+
+#UNCOMMENT
+#Working here! Problems....
+def quarterlyInsightsYeild(resulx , tempdf2, inc):
+    # x = resulx.columns[0:-1:5]
+    y = len(list(resulx.columns))/5
+    x = resulx.columns[0:int(y)]
+    # print(resulx.columns)
+    # exit()
+    xy = list(x)
+    price_resulx = resulx[xy]
+    price_resulx.columns =  price_resulx.columns.str.replace('.csv', '')
+    price_resulx = price_resulx.replace("na",numpy.nan)
+    
+    date_resulx = price_resulx.reset_index()
+    date_resulx['Date'] =pd.to_datetime(date_resulx.Date)
+    date_sortex_df = date_resulx.sort_values(by='Date',axis=0,ascending=False)
+    date_sortex_df = date_sortex_df.set_index("Date")
+
+    
+
+    get_negatives.__name__ = "Number Of Negative Incidences"
+    date_sortex_df = date_sortex_df.resample("QS").agg(['mean',"last"]) #drop na = True
+
+    
+    print(price_resulx,"000000000000000000")
+    a, b= globalRename_withoutIndex(price_resulx,tempdf2, inc)
+    
+
+    #GETTING COLUMN NAMES Yeilds
+    col_names_a=[]
+
+    a = list(a)
+    co = 0
+    for i in range(0,len(a)*2,2):
+      renam = "Average_TY_"+a[int(co)]
+      renam2 = "End_Of_Quarter_TY_"+a[int(co)]
+      col_names_a.append(renam)
+      col_names_a.append(renam2)
+      co+=1
+
+
+
+
+    date_sortex_df.columns = col_names_a
+    
+    #------------- Fill Na and Set Date
+    
+    mod_date_sortex_df = date_sortex_df.fillna("na")
+    mod_date_sortex_df = mod_date_sortex_df.reset_index()
+    mod_date_sortex_df["Date"]=mod_date_sortex_df.Date.dt.strftime('%b %d, %y')
+
+
+    print(mod_date_sortex_df)
+
+    return mod_date_sortex_df, price_resulx, date_sortex_df
+
+
+
+def quarterlyInsightsSpread(result,price_resulx,date_sortex_df, inc):
+    y = len(list(result.columns))/5
+    x = result.columns[0:int(y)]
+    #x = result.columns[0:-1:5]
+    # print(x)
+    # exit()
+    xy = list(x)
+    price_result = result[xy]
+    price_result.columns =  price_result.columns.str.replace('.csv', '')
+    price_result = price_result.replace("na",numpy.nan)
+
+    date_result = price_result.reset_index()
+    date_result['Date'] =pd.to_datetime(date_result.Date)
+    date_sorted_df = date_result.sort_values(by='Date',axis=0,ascending=False)
+    date_sorted_df = date_sorted_df.set_index("Date")
+
+
+    date_sorted_df = date_sorted_df.resample("QS").agg(['mean',"last",get_negatives,"min"]) #drop na = True
+
+    print(price_resulx,"000000000000000000")
+    a, b= globalRename_withoutIndex(price_resulx,price_result, inc)
+    
+
+    #GETTING COLUMN NAMES Yeilds
+    col_names_a=[]
+    col_names_b = []
+
+    a = list(a)
+    co = 0
+    for i in range(0,len(a)*2,2):
+      renam = "Average_TY_"+a[int(co)]
+      renam2 = "End_Of_Quarter_TY_"+a[int(co)]
+      col_names_a.append(renam)
+      col_names_a.append(renam2)
+      co+=1
+
+    b = list(b)
+    co =0
+    for i in range(0,len(b)):
+      renam = "Average_SPD_"+b[i]
+      renam2 = "End_Of_Quarter_SPD_"+b[i]
+      renam3 = "No_Of_Negative_SPD_"+b[i]
+      renam4 = "Min_SPD_"+b[i]
+      col_names_b.append(renam)
+      col_names_b.append(renam2)
+      col_names_b.append(renam3)
+      col_names_b.append(renam4)
+
+    
+      print()
+
+    date_sortex_df.columns = col_names_a
+    date_sorted_df.columns = col_names_b
+    
+    #------------- Fill Na and Set Date
+    
+
+    mod_date_sorted_df = date_sorted_df.fillna("na")
+    mod_date_sorted_df = mod_date_sorted_df.reset_index()
+    mod_date_sorted_df["Date"]=mod_date_sorted_df.Date.dt.strftime('%b %d, %y')
+
+
+    print(mod_date_sorted_df)
+    
+
+    return mod_date_sorted_df
+
+
+
+
+def ImputedYeild(mod_date_sortex_df):
+    imputed_yeild_df = mod_date_sortex_df.replace("na",numpy.nan).fillna(method='ffill').fillna("na")
+    return imputed_yeild_df
+
+
+def ImputedSpread(imputed_yeild_df, mod_date_sorted_df,inc):
+  
+
+    ### SPREADS ####
+    imput_y = imputed_yeild_df.replace('na',numpy.nan)
+
+
+ 
+
+    x = imput_y.columns[1::2]
+    y = imput_y.columns[2::2]
+
+    # print(x)
+    # print(y)
+    # exit()
+
+    avg = pd.DataFrame()
+
+    # count =0
+    # for i in list(x):
+    #   count+=1
+    #   if count == 1:
+        
+    #     continue
+    #   else:
+  
+        
+    #     avg["avg{0}".format(count)] = imput_y[i] - imput_y.iloc[:,1]
+    # count =0
+    # inc  = 1
+    print(inc)
+    # exit()
+    count = 1
+    startFrom = 1 + inc
+    if inc == 0:
+      cc = 1
+    else: 
+      cc = inc + 2
+    for i in range(startFrom, len(list(x))):
+      
+      
+      # print(imput_y[x[i]])
+      # print(imput_y.iloc[:,cc])
+      
+      
+      
+      avg["avg{0}".format(count)] = imput_y[x[i]] - imput_y.iloc[:,cc]
+      count +=1
+    
+    
+    end = pd.DataFrame()
+    count =1
+    if inc == 0:
+      cc = 2
+    else: 
+      cc = inc + 2
+    for i in range(startFrom, len(list(y))):
+      
+        
+      end["end{0}".format(count)] = imput_y[y[i]] - imput_y.iloc[:,cc] #mistake here
+      count += 1
+
+    avg_end = pd.merge(avg,end,left_index=True,right_index=True)
+    # print(avg_end)
+    # exit()
+
+   
+
+
+              #Renaming Avg End
+    len_ae = len(avg_end.columns)/2
+    len_ae = int(len_ae)
+    z = mod_date_sorted_df.columns[1::4]
+    a = mod_date_sorted_df.columns[2::4]
+    
+    
+    naming = list(z)+list(a)
+
+    print(avg_end)
+    print(naming)
+    
+    avg_end.columns = naming
+
+    spreads_train = mod_date_sorted_df.replace("na",numpy.nan)
+    yx =  spreads_train.columns[3::4]
+    xy =  spreads_train.columns[4::4]
+    min_neg = spreads_train[list(xy)+list(yx)]
+    print(min_neg)
+
+    imp_spread = pd.merge(avg_end,min_neg,left_index=True,right_index=True)
+
+
+    lst = []
+    for i in range(len_ae):
+
+      mod = imp_spread.columns[i::len_ae]
+      lst += list(mod)
+
+    print(lst)
+
+
+    imp_spread = imp_spread[lst]
+
+          #Fill NA Min
+    imp_spread = imp_spread.fillna(axis=1,limit=1,method="ffill")
+    imp_spread=imp_spread.replace("nan",numpy.nan) #Uncomment Check
+
+          #NEg Jugaar
+    colNames = imp_spread.columns
+    listOfDFRows = imp_spread.to_numpy().tolist()
+    for currCol in range(1,len(listOfDFRows)):
+      for col in range(1,len(listOfDFRows[currCol])):
+          if math.isnan(listOfDFRows[currCol][col]):
+            if listOfDFRows[currCol][col-1] < 0:
+              listOfDFRows[currCol][col] = 1
+            elif listOfDFRows[currCol][col-1] > 0:
+              listOfDFRows[currCol][col] = 0
+
+    print(len(listOfDFRows))
+
+
+
+    imputed_spread = pd.DataFrame(listOfDFRows)
+    imputed_spread.columns = colNames
+
+
+          #Add Date Col
+    date = mod_date_sorted_df.columns[0]
+    date = mod_date_sorted_df[date]
+    imputed_spread.insert(0, "Date", date)
+
+    print(imputed_spread)
+
+        #Writing
+
+
+    final_spread_imputed_quartely = mod_date_sorted_df.copy(deep=True)
+    final_spread_imputed_quartely = final_spread_imputed_quartely.replace("na",numpy.nan).replace("nan",numpy.nan)
+    final_spread_imputed_quartely=final_spread_imputed_quartely.fillna(imputed_spread)
+    final_spread_imputed_quartely = final_spread_imputed_quartely.fillna("na")
+
+    
+    print(final_spread_imputed_quartely)
+    return final_spread_imputed_quartely
+
+
+def addTSSheet(writer,dataframe,count):
+    dataframe.to_excel(writer,'Treasury Spread {0}'.format(count),index=False)
+
+def addTYSheet(writer,dataframe):
+    dataframe.to_excel(writer,'Merging By Date'.format(count),index=False)
+
+def get_negatives(x):
+      if sum(x<0)==0 and sum(x>0)==0:
+        return "nan" 
+      else:
+        return sum(x<0)
 
 
 
@@ -291,7 +787,7 @@ countries =['Argentina', 'Australia', 'Austria', 'Bahrain', 'Bangladesh', 'Belgi
    'United Kingdom', 'United States', 'Vietnam']
 
 shortlisted_countries = ['United Kingdom', 'United States',"Japan","China","Canada","France","Germany","Singapore","Hong","South Korea", "Australia" ]
-#comment Argentina
+#uncomment  del Argentina
 
 #C-G
 
@@ -343,20 +839,30 @@ for key in dd:
   #Testing
   # if key not in shortlisted_countries:
   #   continue
-  # if key != "United States":
+  # if key != "China":
   #   continue
   # counter+=1
   # if counter >= len(countryNames)/8:
   #   break
   
-  
+  def mykey(value):
+    if "(1)" in value:
+      ls = value.split(" ")[-6]
+      
+    else:
+      ls = value.split(" ")[-5]
+    ia = ls.split("-")[1][0]
+    return ia
 
   dd[key].sort(key=natural_keys)
+  dd[key].sort(key=mykey)
 
 
   print("Working for {0} bonds".format(key))
   print("All Directories\n", dd[key])
-  
+
+  exit()
+
   leng = len(dd[key])//2
   count = 0
   nbonds=[]
@@ -419,38 +925,228 @@ for key in dd:
   # print(bonds)
   print("-------------------------------------------\n------------------------")
  
-  newBonds = []
+  ####################TEST FIELD###################
+  
+  parent_newBonds = []
 
+  count = 1
+  for x in range(0,len(bonds)-1):
+    # print("Main Loop")
+    newBonds = []
+    for i in range(count,len(bonds)):
+      
+      # print("Inside Loop")
+      # print(x , i)
+
+      #Process
+      xf = bonds[i].sub(bonds[x])
+      xf = xf[~xf.index.duplicated()]
+      xf = xf.fillna(value="na")
+      newBonds.append(xf)
+    
+    parent_newBonds.append(newBonds)
+    
+    count += 1
+  #print(parent_newBonds)
+
+
+  resulx,sortex_df = extractingTreasuryYeilds(nbonds)
+  writer = StyleFrame.ExcelWriter('{0}.xlsx'.format(key))
+  writerRenamed = StyleFrame.ExcelWriter('{0}.xlsx'.format(key))
+
+  if key in shortlisted_countries:
+    shortlist_sortex_df = shortlistedYeild(resulx)
+    writerShorlisted = StyleFrame.ExcelWriter('{0}.xlsx'.format(key))
+    writerShortlistedRenamed = StyleFrame.ExcelWriter('{0}.xlsx'.format(key))
+
+    mod_date_sortex_df, price_resulx,date_sortex_df = quarterlyInsightsYeild(resulx, resulx,0)
+    imputed_yeild_df = ImputedYeild(mod_date_sortex_df)
+
+    
+    writerImputed = StyleFrame.ExcelWriter('{0}.xlsx'.format(key))
+    writerQuarterly = StyleFrame.ExcelWriter('{0}.xlsx'.format(key))
+
+
+
+
+  # copy_sortex_df,copy_sorted_df = globalRename(sortex_df,sorted_df, aso)
+  # sortex_df.to_excel(writer,'Merging By Date',index=False)
+  # copy_sortex_df.to_excel(writer,'Merging By Date',index=False)
+
+
+  # result,sorted_df = extractingTreasurySpreads(parent_newBonds[1],1)
+  # print(result)
+
+
+
+ 
+
+
+  aso = 0
+  inc = 0
+  for bonds in parent_newBonds:
+
+    result,sorted_df = extractingTreasurySpreads(bonds,inc)
+    copy_sortex_df,copy_sorted_df = globalRename(sortex_df,sorted_df, aso)
+
+    
+    addTYSheet(writer,sortex_df)
+    addTSSheet(writer,sorted_df,aso)
+
+
+    #Renamed
+    addTYSheet(writerRenamed,copy_sortex_df)
+    addTSSheet(writerRenamed,copy_sorted_df,aso)
+    
+    if key in shortlisted_countries: #not remo uncomment
+      shortlist_sorted_df = shortlistedSpread(result)
+      copy_shortlist_sortex_df,copy_shortlist_sorted_df = globalRename(shortlist_sortex_df,shortlist_sorted_df,aso)
+
+      #Shortlisted
+      addTYSheet(writerShorlisted,shortlist_sortex_df)
+      addTSSheet(writerShorlisted,shortlist_sorted_df,aso)
+
+      #Shorlisted Renamed
+      addTYSheet(writerShortlistedRenamed,copy_shortlist_sortex_df)
+      addTSSheet(writerShortlistedRenamed,copy_shortlist_sorted_df,aso)
+
+      #Quarterly Insights
+      mod_date_sorted_df = quarterlyInsightsSpread(result, price_resulx,date_sortex_df, aso)
+      addTYSheet(writerQuarterly,mod_date_sortex_df)
+      mod_date_sorted_dff = mod_date_sorted_df.replace("nan","na")
+      addTSSheet(writerQuarterly,mod_date_sorted_dff,aso)
+
+      #Imputed Quarterly
+
+      final_spread_imputed_quartely = ImputedSpread(imputed_yeild_df, mod_date_sorted_df,aso)
+      addTYSheet(writerImputed,imputed_yeild_df)
+      addTSSheet(writerImputed,final_spread_imputed_quartely,aso)
+
+     
+
+      
+
+    aso +=1
+    inc += 2
+  
+  print("Writing Normal Files")
+  os.chdir(main_path)
+  os.chdir(output_path)
+  writer.save()
+  os.chdir(main_path)
+
+  os.chdir(production_ouput_path)
+  writerRenamed.save()
+  os.chdir(main_path)
+
+  if key in shortlisted_countries:
+    print("Writing Shortlisted File", key)
+  
+    os.chdir(main_path)
+    os.chdir(shortlist_output_path)
+    writerShorlisted.save()
+    os.chdir(main_path)
+
+    os.chdir(shortlist_production_ouput_path)
+    writerShortlistedRenamed.save()
+    os.chdir(main_path)
+
+    print("Writing Quarterly", key)
+
+    os.chdir(quarterly_path)
+    writerQuarterly.save()
+    os.chdir(main_path)
+
+    print("Writing Imputed Quarterly", key)
+
+    os.chdir(imputed_quarterly_path)
+    writerImputed.save()
+    os.chdir(main_path)
+
+
+  os.chdir(main_path)
+  os.chdir(production_ouput_path)
+  writeToCsv(dataDictd,"dataDictTreasurySpreads.csv")
+  writeToCsv(dataDictx, "dataDictTreasuryYields.csv")
+  os.chdir(main_path)
+    
+
+
+
+  
+# exit()
+
+  #-----------------------------
+
+  #copy_sortex_df,copy_sorted_df = globalRename(sortex_df,sorted_df)
+
+
+  # os.chdir(main_path)
+  # os.chdir(output_path)
+  # writer = StyleFrame.ExcelWriter('{0}.xlsx'.format(key))
+  # sortex_df.to_excel(writer,'Merging By Date',index=False)
+  # addTSSheet(writer,sortex_df,0)
+  # writer.save()
+  # os.chdir(main_path)
+
+  
+    
+
+
+  # print(sortex_df)
+  
+
+  #GETTING CORRECT RESULTS
+  #Now create a universal loop
+  #Put things inside functions, slowly slowly , remain {Renamed,Shortlisted, Quarterly, Imputed}
+  #-------------------Putting Things inside function slowly, slowly----
+
+    # print(result)
+
+  #------------------------
+
+  # x = 0 , i = 1
+  # x = 0 , i = 2
+  # x = 1 , i = 2
+  newBonds = []
   for i in range(0,len(bonds)):
     if i == 0:
       continue
     else:
-      #Logic 1 >> Harder
-      # x = bonds[i].sub(bonds[0],fill_value=0)
-      # x = x[~x.index.duplicated()]
-
-      # xl = x.add(bonds[0],fill_value=0)
-      # xl = xl[~xl.index.duplicated()]
-
-      # mdxl = xl.replace(0.0, numpy.nan)
-      # mdxl = mdxl[~mdxl.index.duplicated()]
-
-      # yl = bonds[i].sub(x,fill_value=0)
-      # yl = yl[~yl.index.duplicated()]
-
-      # xfl = mdxl.sub(yl,fill_value=numpy.nan)
-      # xfl = xfl[~xfl.index.duplicated()]
-
-      # newBonds.append(xfl)
 
       #Logic 2 >> 
       xf = bonds[i].sub(bonds[0])
       xf = xf[~xf.index.duplicated()]
       xf = xf.fillna(value="na")
-      # print(xf)
-      
+
+
+      #find columns first to 3Year
+      #for loop runs these times and referencing those columns
+      #Checking conditions for subtract from lowest maturity
+      # for loop to create sheets
 
       newBonds.append(xf)
+  
+  newBonds2 = []
+  for i in range(0,len(bonds)):
+    print(i)
+    if i == 0 or i == 1:
+      continue
+    else:
+      
+      #Logic 2 >> 
+      xf = bonds[i].sub(bonds[1])
+      xf = xf[~xf.index.duplicated()]
+      xf = xf.fillna(value="na")
+      print("Loop end")
+
+      newBonds2.append(xf)
+  
+  #newBonds
+  print(newBonds2)
+  exit()
+
+  ###############################TEST FIELD END#################
 
   #Extras
   # print(newBonds)
@@ -1234,6 +1930,7 @@ for key in dd:
   copy_sorted_df.to_excel(writer,'Treasury Spread',index=False)
   writer.save()
 
+  #Uncomment , Check this
   writeToCsv(dataDictd,"dataDictTreasurySpreads.csv")
   writeToCsv(dataDictx, "dataDictTreasuryYields.csv")
 
