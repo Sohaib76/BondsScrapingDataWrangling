@@ -69,7 +69,8 @@ os.chdir(main_path)
 os.chdir(input_path_treasury)
 countryNames = glob.glob('*.{}'.format(csv_extension))
 os.chdir(main_path)
-
+dataDictd = []
+dataDictx = []
 
 #Short Funcs
 def atoi(text):
@@ -156,7 +157,7 @@ def createADic():
 # p = input("Do you want to create adic.csv ? Enter y/n  ")
 # if p == "y":
 #Uncomment
-# createADic()
+createADic()
 
 
 def getCountryAbbr(input_country):
@@ -220,19 +221,20 @@ def renameCountry(input_name,over):
 
 
 def globalRename(df1,df2):
-  short_dataDic = []
-  short_dataDictx = []
+  global dataDictd
+  global dataDictx
+
   over = df1.columns[1]
   renamed = []
   renamex = []
   for i in df2.columns[1:]:
     ans = renameCountry(i,over)
-    short_dataDic.append([i,ans])
+    dataDictd.append([i,ans])
     renamed.append(ans)
   for i in df1.columns[1:]:
     ans = renameCountry(i,over)
     renamex.append(ans)
-    short_dataDictx.append([i,ans])
+    dataDictx.append([i,ans])
   
   renamed.insert(0,"Date")
   renamex.insert(0,"Date")
@@ -288,7 +290,7 @@ countries =['Argentina', 'Australia', 'Austria', 'Bahrain', 'Bangladesh', 'Belgi
   'Romania', 'Russia', 'Serbia', 'Singapore', 'Slovakia', 'Slovenia', 'South Africa', 'South Korea', 'Spain', 'Sri Lanka', 'Switzerland', 'Taiwan', 'Thailand', 'Turkey', 'Uganda', 'Ukraine',
    'United Kingdom', 'United States', 'Vietnam']
 
-shortlisted_countries = ["Argentina",'United Kingdom', 'United States',"Japan","China","Canada","France","Germany","Singapore","Hong","South Korea", "Australia" ]
+shortlisted_countries = ['United Kingdom', 'United States',"Japan","China","Canada","France","Germany","Singapore","Hong","South Korea", "Australia" ]
 #comment Argentina
 
 #C-G
@@ -335,12 +337,14 @@ counter = 0
 for key in dd:
   
   # Uncomment
-  # if key in doneBCont:
-  #   continue
+  if key in doneBCont:
+    continue
 
   #Testing
-  if key != "China":
-    continue
+  # if key not in shortlisted_countries:
+  #   continue
+  # if key != "United States":
+  #   continue
   # counter+=1
   # if counter >= len(countryNames)/8:
   #   break
@@ -652,7 +656,7 @@ for key in dd:
   #if key is defferent don't create Shortlisted
   print("Creating Shortlisted Ouput")
   #Uncomment CHANGE "!, not"
-  if key not in shortlisted_countries:
+  if key in shortlisted_countries:
 
     #------------For Yeild
     x = resulx.columns[0:-1:5]
@@ -701,10 +705,10 @@ for key in dd:
     os.chdir(main_path)
     os.chdir(shortlist_production_ouput_path)
     #Uncomment
-    # writer = StyleFrame.ExcelWriter('{0}.xlsx'.format(key))
-    # copy_shortlist_sortex_df.to_excel(writer,'Merging By Date',index=False)
-    # copy_shortlist_sorted_df.to_excel(writer,'Treasury Spread',index=False)
-    # writer.save()
+    writer = StyleFrame.ExcelWriter('{0}.xlsx'.format(key))
+    copy_shortlist_sortex_df.to_excel(writer,'Merging By Date',index=False)
+    copy_shortlist_sorted_df.to_excel(writer,'Treasury Spread',index=False)
+    writer.save()
     os.chdir(main_path)
     #-------------------
     
@@ -859,217 +863,219 @@ for key in dd:
 
 
     print(mod_date_sorted_df)
-    
-    
-    
 
-    #Research on aggregiation
-    #https://stackoverflow.com/questions/53461722/pandas-how-to-get-count-of-negative-and-positive-values-in-a-row
+    ## Quarter Done except Writing
 
-    #------------------Writing To File-----------
-    
+    ##-------------------------- Imputed Quarterly -------------------
 
-    # mod_date_sortex_df = StyleFrame(mod_date_sortex_df, Styler(shrink_to_fit=False, wrap_text=False))
-    # print(mod_date_sortex_df)
+    ### YEILD
+    imputed_yeild_df = mod_date_sortex_df.replace("na",numpy.nan).fillna(method='ffill').fillna("na")
 
-    #---------Imputed
-    
+    ### SPREADS ####
+    #Subtracting YEilds for spread
 
-    # threshed = len(date_sorted_df.columns) - 1
-    # threshex = len(date_sortex_df.columns) - 1
-    # print(threshex,threshed)
+    imput_y = imputed_yeild_df.replace('na',numpy.nan)
+ 
 
-    # drop_mod_date_sortex_df = mod_date_sortex_df.replace("na",numpy.nan).dropna(how="all",thresh=3).fillna("na")
-    # drop_mod_date_sorted_df = mod_date_sorted_df.replace("na",numpy.nan).dropna(thresh=4).fillna("na")
-    # print(drop_mod_date_sorted_df)
-
-
-    print(mod_date_sortex_df)
-    train = mod_date_sortex_df.replace("na",numpy.nan)
-
-    #ALGO 1
-    #Part 1
-    print(train.isnull().any())
-    null_columns = train.columns[train.isnull().any()]
-    v = train[null_columns]
-    print(train,"Train")
-
-    # print(train.Average_TY_AR_P_TY1YB.shift())
-
-
-    # xy = train.columns[1:-1:2]
-    # drop_xy = list(xy)[1:]
-    # avg_train = train[list(xy)]
-    # drop_avg_train = train[drop_xy]
-    # print(drop_avg_train)
-    # exit()
-
-    #MAIN FORMULA
-    #train['Final Rate'] = train['Average_TY_AR_P_TY2YB'].fillna(train['Average_TY_AR_P_TY2YB'].ffill() - train.Average_TY_AR_P_TY1YB)
-    #MAIN FORMULA
-
-    #avg_train = avg_train.fillna(avg_train.ffill() - avg_train.Average_TY_AR_P_TY1YB)
-    # drop_avg_train.apply(lambda x: print(x.fillna(x.ffill() - avg_train.Average_TY_AR_P_TY1YB)),axis=1)
-
-
-    #new_train= drop_avg_train.apply(lambda x: x.fillna(x.ffill() - train.Average_TY_AR_P_TY1YB))
-    yx = train.columns[3:-1]
-    new_train = train[list(yx)]
-    new_train= new_train.apply(lambda x: x.fillna(x.ffill() - train.iloc[:,1])) #Uncomment Make it Not Hardcoded
-
-    # new_train= new_train.apply(lambda x: x.fillna(x.ffill() - train.Average_TY_AR_P_TY1YB))
-
-    ab = train.columns[0:3]
-    add_train =  train[list(ab)]
-    
-    final_train = pd.merge(add_train,new_train,left_index=True,right_index=True)
+    x = imput_y.columns[1::2]
+    y = imput_y.columns[2::2]
 
 
 
-    #########FOR SPREADS
 
-    spreads_train = mod_date_sorted_df.replace("na",numpy.nan)
-    print(spreads_train,"spread_train")
+    avg = pd.DataFrame()
 
-    yx = spreads_train.columns[5:]
-    new_spread_train = spreads_train[list(yx)]
-    print(new_spread_train)
-    
+    #pd.set_option('display.max_rows', None)
 
-    yx =  new_spread_train.columns[0::4]
-    xy =  new_spread_train.columns[1::4]
-    # avg = new_spread_train[list(yx)]
-    # end = new_spread_train[list(yx)]
-    avg_end = new_spread_train[list(yx)+list(xy)]
-    print(avg_end)
-
-
-
-    yx =  new_spread_train.columns[2::4]
-    xy =  new_spread_train.columns[3::4]
-    min_neg_cols = list(xy)+list(yx)
-    min_neg = new_spread_train[list(xy)+list(yx)]
-    print(min_neg)
-    
-    
-    new_avg_end= avg_end.apply(lambda x: x.fillna(x.ffill() - spreads_train.iloc[:,1]))  #UNCOMMENT MAKe it un hardcoded
-
-
-    ab = spreads_train.columns[0:5]
-    add_spread =  spreads_train[list(ab)]
-
-    # ab = train.columns[0:3]
-    # add_train =  train[list(ab)]
-    
-    merge_spred = pd.merge(new_avg_end,min_neg,left_index=True,right_index=True)
-    print(merge_spred)
-
-
-    x = len(merge_spred.columns)/4
-    print(x)
-
-    ab = []
-    for i in range(int(x)):
-      ab.append(list(merge_spred.columns[i::int(x)]))
-    
-    flatList = [ item for elem in ab for item in elem]
-    print(flatList)
-    
-    new_merge_spread = merge_spred[flatList]
-    pd.set_option('display.max_rows', None)
-
-    print(new_merge_spread)
-
-    filled_spreadd = new_merge_spread.fillna(axis=1,limit=1,method="ffill")
-    filled_spread=filled_spreadd.replace("nan",numpy.nan)
-    
-
-
-    def fillneg(x):
-      val  = x.ffill()
-      if val > 0:
-        return x.fillna(0)
-      else:
-        return x.fillna(1)
-    # x.fillna(x.ffill() - spreads_train.iloc[:,1]
-    #filled_spread= filled_spread.apply(lambda x: x.fillna(x.ffill(axis=1)- x.ffill(axis=1) ) )
-    #new_avg_end= avg_end.apply(lambda x: x.fillna(x.ffill() - spreads_train.iloc[:,1]))  #UNCOMMENT MAKe it un hardcoded
-
-    # df['c'] = df.apply(
-    #     lambda row: row['a']*row['b'] if np.isnan(row['c']) else row['c'],
-    #     axis=1
-    # )
-
-    def fillneg2(row):
-      #if numpy.isnan(row):
-      # y = row.ffill()
-      # print(y)
-      if row.End_Of_Quarter_SPD_CN_P_TS3YB_VS_1YB > 0:
-        return 0 #4
-      elif row.End_Of_Quarter_SPD_CN_P_TS3YB_VS_1YB < 0:
-        return 1 #2
-      else:
-        return row
-        # if row.ffill() > 0:
-        #  return 0
-        # else:
-        #   return 1
-      # else:
-      #   return row
-    filled_spread = filled_spread.apply(
-        lambda x: x.fillna(fillneg2(x)),
-        axis=1,
+    count =0
+    for i in list(x):
+      count+=1
+      if count == 1:
         
-    )
-    #WORKING HERE
+        continue
+      else:
+        
+        #subtracting every col with 2nd col (Avg Min)
+        avg["avg{0}".format(count)] = imput_y[i] - imput_y.iloc[:,1]
+    
+    #print(avg)
 
-    #filled_spread = filled_spread.fillna(axis=1,limit=1,method=fillneg)
 
+    end = pd.DataFrame()
+    count =0
+    for i in list(y):
+      count+=1
+      if count == 1:
+        
+        continue
+      else:
+        
+        #subtracting every column from third col (End min)
+        end["end{0}".format(count)] = imput_y[i] - imput_y.iloc[:,2] #mistake here
+    
+    #print(end)
+
+    avg_end = pd.merge(avg,end,left_index=True,right_index=True)
+
+
+              #Renaming Avg End
+    len_ae = len(avg_end.columns)/2
+    len_ae = int(len_ae)
+    z = mod_date_sorted_df.columns[1::4]
+    a = mod_date_sorted_df.columns[2::4]
+    
+    
+    naming = list(z)+list(a)
+    # naming.pop(0)
+    # naming.pop(int(len_ae))
+
+    avg_end.columns = naming
+    # print(avg_end)
+
+          #FOR Min NEG
+    
+    spreads_train = mod_date_sorted_df.replace("na",numpy.nan)
+    yx =  spreads_train.columns[3::4]
+    xy =  spreads_train.columns[4::4]
+    min_neg = spreads_train[list(xy)+list(yx)]
+    print(min_neg)
+
+
+          #MERGE AND ALIGN
+    imp_spread = pd.merge(avg_end,min_neg,left_index=True,right_index=True)
+
+
+    lst = []
+    for i in range(len_ae):
+
+      mod = imp_spread.columns[i::len_ae]
+      lst += list(mod)
+
+    print(lst)
+
+    imp_spread = imp_spread[lst]
+    #print(imp_spread)
+
+          #Fill NA Min
+    imp_spread = imp_spread.fillna(axis=1,limit=1,method="ffill")
+    imp_spread=imp_spread.replace("nan",numpy.nan) #Uncomment Check
+
+    #print(imp_spread)
 
     
-    print(filled_spread)
-    # final_spread = pd.merge(add_spread,new_avg_end,left_index=True,right_index=True)
-
-    filled_spread = pd.merge(add_spread,filled_spread,left_index=True,right_index=True)
 
 
-    # exit()
+          #NEg Jugaar
 
-    filled_spread = filled_spread.fillna("na")
-    final_train = final_train.fillna("na")
-    # print(final_spread)
+   
+    #1.234 and 0.0 in last list
+    #imp_spread = imp_spread.fillna("na") #check
+    colNames = imp_spread.columns
+    listOfDFRows = imp_spread.to_numpy().tolist()
+    #print(listOfDFRows)
+    for currCol in range(1,len(listOfDFRows)):
+      #print(listOfDFRows[currCol])
+      for col in range(1,len(listOfDFRows[currCol])):
+          if math.isnan(listOfDFRows[currCol][col]):
+            #print(listOfDFRows[currCol])
+            if listOfDFRows[currCol][col-1] < 0:
+              listOfDFRows[currCol][col] = 1
+            elif listOfDFRows[currCol][col-1] > 0:
+              listOfDFRows[currCol][col] = 0
+          # if listOfDFRows[currCol][col] == "alpha" and listOfDFRows[currCol][col-1] != "alpha" and listOfDFRows[currCol][col-1] != "na":
+
+          # if listOfDFRows[currCol][col] == "alpha" and listOfDFRows[currCol][col-1] != "alpha" and listOfDFRows[currCol][col-1] != "na":
+          #   if listOfDFRows[currCol][col-1] < 0:
+          #     listOfDFRows[currCol][col] = 1
+          #   elif listOfDFRows[currCol][col-1] > 0:
+          #     listOfDFRows[currCol][col] = 0
+      #output one row list
+
+    #ouput list of rows
+    print(len(listOfDFRows))
+
+    imputed_spread = pd.DataFrame(listOfDFRows)
+    imputed_spread.columns = colNames
+    #print(xx)
+
+    
+
+    
+    
+
+
+          #Add Date Col
+    date = mod_date_sorted_df.columns[0]
+    date = mod_date_sorted_df[date]
+    imputed_spread.insert(0, "Date", date)
+    
+    # imputed_spread = pd.merge(date,imp_spread,left_index=True,right_index=True)
+    # print(imputed_spread)
+    print(imputed_spread)
+
+        #Writing
+
+
+    final_spread_imputed_quartely = mod_date_sorted_df.copy(deep=True)
+    final_spread_imputed_quartely = final_spread_imputed_quartely.replace("na",numpy.nan).replace("nan",numpy.nan)
+    #final_spread_imputed_quartely[final_spread_imputed_quartely.isnull()] = imputed_spread.values
+    final_spread_imputed_quartely=final_spread_imputed_quartely.fillna(imputed_spread)
+
+
+
+    final_spread_imputed_quartely = final_spread_imputed_quartely.fillna("na")
+
+    print(final_spread_imputed_quartely, "df1")
+    print(imputed_spread, "df2")
+    print(final_spread_imputed_quartely)
+
+    #exit()
+
+    #imputed_spread = imputed_spread.fillna("na")
     os.chdir(main_path)
     os.chdir(imputed_quarterly_path)
     writer = StyleFrame.ExcelWriter('{0}.xlsx'.format(key))
-    final_train.to_excel(writer,'Merging By Date',index=False)
-    filled_spread.to_excel(writer,'Treasury Spread',index=False)
+    imputed_yeild_df.to_excel(writer,'Merging By Date',index=False)
+    # imputed_spread.to_excel(writer,'Treasury Spread',index=False)
+    final_spread_imputed_quartely.to_excel(writer,'Treasury Spread',index=False)
+
     writer.save()
     os.chdir(main_path)
 
+    print("Done Quarterly Imputations For",key)
 
-    # print(final_train)
-    exit()
 
-    #ALGO 0
-    # drop_mod_date_sortex_df = mod_date_sortex_df.replace("na",numpy.nan).fillna(method='ffill').fillna("na")
-    # drop_mod_date_sorted_df = mod_date_sorted_df.replace("na",numpy.nan).fillna(method='ffill').fillna("na")
-    # print(drop_mod_date_sortex_df)
-    # print(mod_date_sortex_df)
-    #-----------------
 
+
+
+
+    # print(liy)
     
 
-    # os.chdir(main_path)
-    # os.chdir(imputed_quarterly_path)
-    # writer = StyleFrame.ExcelWriter('{0}.xlsx'.format(key))
-    # drop_mod_date_sortex_df.to_excel(writer,'Merging By Date',index=False)
-    # drop_mod_date_sorted_df.to_excel(writer,'Treasury Spread',index=False)
-    # writer.save()
-    # os.chdir(main_path)
-
-    exit()
 
 
+
+
+
+
+
+
+
+    
+    #Renaming col names , add date columns
+    #Not chnaging below code , will se it later, maybe delete in end
+    #Negatives jugaar
+    
+    
+    
+
+
+    
+    #Uncomment remove continue
+
+    #Run it only for imputed quarteryl (and send), then all shortlisted_countries list, then upto 3-4 coountries for ALL to check the flow
+
+    mod_date_sorted_df = mod_date_sorted_df.replace("nan","na")
 
     #----------------
     print("Writing Quarterly Insights")
@@ -1085,6 +1091,8 @@ for key in dd:
     print("Done Quarterly Insights For",key)
 
 
+    
+
 
   #--------------------
   #Imputed Quarterly Insights
@@ -1092,7 +1100,7 @@ for key in dd:
 
 
   #exit()
-  # -----------------------------------------------
+  # -----------------------------------------------Imputed/Quarterly Insights Ends-------------
   
   
 
