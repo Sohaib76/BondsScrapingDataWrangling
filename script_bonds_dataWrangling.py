@@ -9,34 +9,85 @@ import json
 import numpy
 import re
 from styleframe import StyleFrame, Styler, utils
+import csv
+import time
 
-
-
-
-#Variables
-countryNamesSliced=[]
-countries = []
-
-
+#-----------------------------Part1--------------
+mainpath = os.getcwd()
 path = os.getcwd()
+# path = os.getcwd()
 extension = 'csv'
-os.chdir(path)
+os.chdir(path+"/TREASURY_SPREADS_AND_YIELDS/")
 countryNames = glob.glob('*.{}'.format(extension))
+os.chdir(path)
+def atoi(text):
+    return (int(text) if text.isdigit() else text)
+def natural_keys(text):
+    return [ atoi(c) for c in re.split('(\d+)',text) ]
+countryNames.sort(key=natural_keys)
+if not os.path.exists('Output'):
+    os.makedirs('Output')
+os.chdir(path+"/Output/")
+f = open('adict.csv', 'w',newline='')
+with f:
+    writer = csv.writer(f)
+    writer.writerow(["Countries","1st starting date","1st ending date","2nd starting date","2nd ending date"])
+os.chdir(path+"/TREASURY_SPREADS_AND_YIELDS/")
+
+rowToWrite = []
+rowOfrows = []
+count = 0
+for countryName in countryNames:
+    count += 1
+    if count == 3:
+        rowOfrows.append(rowToWrite)
+        rowToWrite = []
+        count = 1
+    if count < 3:
+        rowList = []
+        with open(countryName, newline='', encoding='latin-1') as f: 
+            reader = csv.reader(f)
+            for row in reader:
+                rowList.append(row)
+
+        try:
+            endDate = rowList[1][0]
+            startDate = rowList[-1][0]
+        except:
+            continue
+
+        if count != 2:
+            rowToWrite.append(countryName.replace(" (1)", ""))
+            rowToWrite.append(startDate)
+            rowToWrite.append(endDate)
+
+        else:
+           
+            rowToWrite.insert(1,startDate)
+            rowToWrite.insert(2,endDate)
+            
+
+    
+
+        
+    if countryNames.index(countryName)==len(countryNames)-1:
+        
+        rowOfrows.append(rowToWrite)
+    
+os.chdir(path)
+os.chdir(path+"/Output/")
+f = open('adict.csv', 'a+',newline='')
+with f:
+    writer = csv.writer(f)
+    writer.writerows(rowOfrows)
+os.chdir(path)
 
 
-# print("OK till here")
-# for countryName in countryNames:
-#     # x = re.search("([a-zA-Z]+ [^Overnighta-zA-Z]*)(\d*.+ Bond)", countryName)
-#     # print(x.group(1))
-#     # # exit()
-#     # countryNamesSliced.append(x)
-#     countryNamesSliced.append(countryName.split(" "))
-# for i in countryNamesSliced:
-#     if i[0] not in countries:
-#         countries.append(i[0])
 
-# print("Changed Here")
-# print(countries)
+
+#---------------------------Part2
+
+
 
 countries =['Argentina', 'Australia', 'Austria', 'Bahrain', 'Bangladesh', 'Belgium', 'Botswana', 'Brazil', 'Bulgaria', 'Canada', 'Chile', 'China', 'Colombia', 'Croatia', 
 'Cyprus', 'Czech', 'Egypt', 'France', 'Germany', 'Greece', 'Hong', 'Hungary', 'Iceland', 'India', 'Indonesia', 'Ireland', 'Israel', 'Italy', 'Japan', 'Jordan', 'Kenya',
@@ -72,29 +123,23 @@ if not os.path.exists('Output'):
 os.chdir(path+"/Output/")
 doneBCont = glob.glob('*.{}'.format(extension))
 doneBCont = [i.replace(".xlsx","") for i in doneBCont]
-# print(doneBCont)
-
-
-os.chdir(path)
 
 
 
-def atoi(text):
-    return (int(text) if text.isdigit() else text)
-def natural_keys(text):
-    return [ atoi(c) for c in re.split('(\d+)',text) ]
+os.chdir(path+"/TREASURY_SPREADS_AND_YIELDS/")
+
 
 
 #-------------
 
 
 for key in dd:
-  # print(key)
-  # continue
+  
+  
   if key in doneBCont:
     continue
-  # if key != "United":
-  #   continue
+  
+  
 
   dd[key].sort(key=natural_keys)
 
@@ -108,6 +153,7 @@ for key in dd:
   c = 1
   prev = numpy.array([])
   for i in range(0,leng):
+    print(os.getcwd())
     print(dd[key][count])
     print(dd[key][count+1],"loop")
     try:
@@ -144,7 +190,7 @@ for key in dd:
 
   
   print("Merging")
-  print("Not Changed")
+  
   
 
   bonds = []
@@ -167,7 +213,7 @@ for key in dd:
     if i == 0:
       continue
     else:
-      # print("LOOP\n",i)
+      
       x = bonds[i].sub(bonds[0],fill_value=0)
       x = x[~x.index.duplicated()]
 
@@ -193,13 +239,13 @@ for key in dd:
   bonds = newBonds.copy()
 
   print(len(bonds))
-  print("Not Changed") 
+   
 
 
   #--------------------------------------------------
 
-  # print("ORDER CHANGED HERE")
-  # print(bonds)
+  
+  
 
 
   c=0
@@ -222,7 +268,7 @@ for key in dd:
 
  
 
-  print("Not Changed")
+  
 
 
 
@@ -230,8 +276,8 @@ for key in dd:
   if len(bonds) == 2:
     result = pd.DataFrame.drop_duplicates(pd.merge(bonds[0],bonds[1],on=["Date"] , how="outer"))
     result = result.fillna(value="na")
-    # print(result)
-    # exit()
+    
+    
     
   elif len(nbonds) == 1:
     result = nbonds[0]
@@ -249,13 +295,13 @@ for key in dd:
         
         result = pd.DataFrame.drop_duplicates(pd.merge(result,bonds[i], on=["Date"] , how="outer"))
         result = result.fillna(value="na")
-        # print(result)
+        
 
-  print("Changed")
+  
 
-  # print(result.columns)
+  
 
-  # exit()
+  
  
   
 
@@ -265,8 +311,8 @@ for key in dd:
 
 
   
-  # for i in range(0,len(bonxs)):
-  #  for x in range(0,len(dd[key]),2):
+  
+  
   print(len(bonxs))
   c=0
   for x in range(0,len(bonxs)):
@@ -291,9 +337,9 @@ for key in dd:
 
   if len(bonxs) == 2:
     resulx = pd.DataFrame.drop_duplicates(pd.merge(bonxs[0],bonxs[1],on=["Date"] , how="outer"))
-    # resulx = resulx.fillna(0)
     
-    # print(result)
+    
+    
     
   elif len(bonxs) == 1:
     resulx = bonxs[0]
@@ -304,25 +350,25 @@ for key in dd:
       
       if i == 0:
         resulx = pd.DataFrame.drop_duplicates(pd.merge(bonxs[i],bonxs[i+1],on=["Date"] , how="outer"))
-        # print(resulx,"jkljhk")
-        # exit()
+        
+        
    
-        # resulx = resulx.fillna(0)
+        
       elif i == 1:
         continue
       else:
-        # print(resulx, bonxs[i])
+        
         
         resulx = pd.DataFrame.drop_duplicates(pd.merge(resulx,bonxs[i], on=["Date"] , how="outer"))
-        # resulx = resulx.fillna(0)
+        
     
   #pd.set_option('display.max_columns', None)
-  # t = resulx.columns[0:5]
+  
   b = resulx.columns[:]
-  # resulx[t] =  resulx[t].fillna(value=0)
+  
   resulx[b] =  resulx[b].fillna(value="na")
 
-  # print(resulx)
+  
   
         
         
@@ -337,15 +383,15 @@ for key in dd:
 #--------------------------------
 
   #print([pd.DataFrame(i, columns=['Date', 'Price', "Open", "High","Low", "Change %"]).set_index("Date", inplace = True) for i in bonds])
- # result = pd.DataFrame.drop_duplicates(reduce(lambda x, y: pd.merge(x, y, on = ['Date'], how="outer"), [pd.DataFrame(i, columns=['Date', 'Price', "Open", "High","Low", "Change %"]) for i in bonds]))
+ 
   print("Merged")
 
-  # os.remove("test{0}.pkl".format(i))
+  
   
   
   
 
-  # print(result)
+  
 
   try:
     result = pd.DataFrame.drop_duplicates(result)
@@ -363,7 +409,7 @@ for key in dd:
   b = result.columns[4::5]
   
   xy = list(x)+list(y)+list(z)+list(a)+list(b)
-  # print(xy)
+  
   result = result[xy]
   print("Changed till here")
 
@@ -376,7 +422,7 @@ for key in dd:
   b = resulx.columns[4::5]
   
   xy = list(x)+list(y)+list(z)+list(a)+list(b)
-  # print(xy)
+  
   resulx = resulx[xy]
 
 
@@ -392,9 +438,9 @@ for key in dd:
  
   sorted_df["Date"]=sorted_df.Date.dt.strftime('%b %d, %y')
 
-  # path = os.getcwd()+"/COutput/"
-  # realPath = os.getcwd()
-  # os.chdir(path)
+  
+  
+  
 
   print(sorted_df,"...")
   
@@ -412,7 +458,11 @@ for key in dd:
  
   sortex_df["Date"]=sortex_df.Date.dt.strftime('%b %d, %y')
 
+  os.chdir(mainpath)
+  print(mainpath)
+
   path = os.getcwd()+"/Output/"
+  print(path)
   realPath = os.getcwd()
   os.chdir(path)
 
@@ -424,7 +474,7 @@ for key in dd:
 
 
 
-  # pd.set_option('display.max_colwidth', None)
+  
   sortex_df.columns = sortex_df.columns.str.replace('.csv', '')
   sorted_df.columns = sorted_df.columns.str.replace('.csv', '')
 
@@ -442,7 +492,7 @@ for key in dd:
 
 
   
-  # writer = pd.ExcelWriter('{0}.xlsx'.format(key))
+  
   sortex_df.to_excel(writer,'Merging By Date',index=False)
   sorted_df.to_excel(writer,'Treasury Spread',index=False)
  
@@ -452,7 +502,7 @@ for key in dd:
 
 
 
-  os.chdir(realPath)
+  os.chdir(mainpath)
 
 
 
