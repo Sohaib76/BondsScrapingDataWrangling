@@ -1,326 +1,166 @@
-
+import time
+from bs4 import BeautifulSoup
 from selenium import webdriver
-from selenium.common.exceptions import TimeoutException
+from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.common.by import By
-import time
-path = r'C:\\Users\\Sx\\Documents\\chromedriver_win32\\chromedriver.exe'
-browser = webdriver.Chrome(executable_path = path)
-browser.implicitly_wait(2)
 
+driver = webdriver.Chrome()
+driver.maximize_window()
 
-link = "https://www.investing.com/rates-bonds/world-government-bonds?maturity_from=10&maturity_to=310"
-browser.get(link)
-browser.maximize_window()
+driver.get('https://www.investing.com/rates-bonds/')
 
-# time.sleep(5)
+#Login
+email = 'wonderhaven20@gmail.com'
+password = 'waspbeastring12'
 
-browser.find_element_by_class_name("login").click()
+failedCountryListings = []
 
-inputEm = browser.find_element_by_id('loginFormUser_email')
-inputEm.send_keys("wonderhaven20@gmail.com")
+login_btn = driver.find_element_by_css_selector('.login')
+driver.execute_script('arguments[0].click();', login_btn)
 
-inputPass = browser.find_element_by_id("loginForm_password")
-inputPass.send_keys("waspbeastring12")
+time.sleep(3)
 
-div = browser.find_element_by_id("loginPopup")
-div.find_element_by_class_name("newButton").click()
+email_input = driver.find_element_by_css_selector('#loginFormUser_email')
+email_input.clear()
 
+email_input.send_keys(email)
 
-time.sleep(4)
+password_input = driver.find_element_by_css_selector('#loginForm_password')
+password_input.clear()
 
+password_input.send_keys(password)
 
+submit_btn = driver.find_elements_by_css_selector('.newButton.orange')[-1]
+submit_btn.click()
 
+time.sleep(3)
 
-tabLen = browser.find_elements_by_tag_name("table")
+driver.get('https://www.investing.com/rates-bonds/')
 
+search_btn = WebDriverWait(driver, 15).until(EC.presence_of_element_located((By.CSS_SELECTOR, '.js-search-bonds')))
+driver.execute_script('arguments[0].click();', search_btn)
 
-table_count = 3
-for t in range(0,len(tabLen)-1):
-    
-    tab = browser.find_elements_by_tag_name("table")
-    slicedTab = tab[table_count]
+country_listing = WebDriverWait(driver, 15).until(EC.presence_of_element_located((By.CSS_SELECTOR, '.plusIconTd a')))
 
-    print(slicedTab.text)
-    # rowsList = []
+driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+time.sleep(5)
 
-    rowsLen = slicedTab.find_elements_by_tag_name("a")
-    row_count = 0
-    for i in range(0,len(rowsLen)-1):#-1
+soup = BeautifulSoup(driver.page_source, 'html.parser')
+country_listings = [elem.get('href') for elem in soup.select('.plusIconTd a')]
+
+print(f'Found {len(country_listings)} country listings')
+
+for i in range(len(country_listings)):
+    try:
+        print(f'On country listings index => {i}')
+        driver.get(f'https://www.investing.com{country_listings[i]}')
+
+        historical_data_btn = WebDriverWait(driver, 15).until(EC.presence_of_element_located((By.CSS_SELECTOR, '#pairSublinksLevel2 a')))
+        driver.execute_script('arguments[0].click();', historical_data_btn)
+        
+        date_picker = WebDriverWait(driver, 15).until(EC.presence_of_element_located((By.CSS_SELECTOR, '#widgetFieldDateRange')))
+        driver.execute_script('arguments[0].click();', date_picker)
+        
+        start_date =  WebDriverWait(driver, 15).until(EC.presence_of_element_located((By.CSS_SELECTOR, '#startDate')))
+        start_date.clear()
+        start_date.send_keys('01/01/1970')
+        
         time.sleep(2)
         
-        tab = browser.find_elements_by_tag_name("table")
-        slicedTab = tab[table_count]
-        rows = slicedTab.find_elements_by_tag_name("a")
-        print(row_count)
+        apply_btn = driver.find_element_by_css_selector('#applyBtn')
+        driver.execute_script('arguments[0].click();', apply_btn)
         
-        sliced = rows[row_count]
-    
+        time.sleep(3)
         
-
-    
-
-        print(sliced.text)
-        
-        timeout = 3
-        try:
-            element_present = EC.presence_of_element_located((By.ID, 'rates_bonds_table_51'))
-            WebDriverWait(browser, timeout).until(element_present)
-        except TimeoutException:
-            print("Timed out waiting for page to load")
-        finally:
-            print("Page loaded")
-            sliced.click()
- 
-      
-        try:
-            myElem = WebDriverWait(browser, timeout).until(EC.presence_of_element_located((By.ID, 'js_instrument_chart_wrapper')))
-            browser.find_element_by_link_text("Historical Data").click()
-        except TimeoutException:
-            print ("Loading took too much time!")
+        download_csv_btn = WebDriverWait(driver, 15).until(EC.presence_of_element_located((By.CSS_SELECTOR, '.js-download-data')))
+        driver.execute_script('arguments[0].click();', download_csv_btn)
 
 
-        
 
-        try:
+        #-------------------Double
             
-            browser.find_element_by_class_name("js-download-data").click()
-        except:
-            time.sleep(4)
-            
-            browser.find_element_by_class_name("js-download-data").click()
-
-       
-        browser.execute_script("window.history.go(-2)")
-
-        print("{0} Row completed Of Table {1}".format(row_count,table_count))
-        row_count+=1
-
-   
-    print("Completed Tables",table_count)
-    table_count += 1
-
-
-exit()
-
-
-# browser.execute_script("window.scrollTo(0, 400)") 
-
-lk = tab.find_element_by_tag_name("a")
-lk.click()
-
-
-# browser.execute_script("window.scrollTo(0, 500)") 
-time.sleep(2)
-
-
-browser.find_element_by_link_text("Historical Data").click()
-
-time.sleep(4)
-
-browser.find_element_by_class_name("js-download-data").click()
-
-browser.back()
-browser.back()
-
-# browser.close()
-
-exit()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-from bs4 import BeautifulSoup
-import requests
-
-
- 
-r  = requests.get("https://www.investing.com/rates-bonds/world-government-bonds?maturity_from=10&maturity_to=310")
-data = r.text
-soup = BeautifulSoup(data, "html5lib")
-
-x = soup.find("table")
-print(x)
-
-
-
-exit()
-#     ll = []
-#     for elem in x:
-#         ll.append(elem.find("a").get("href"))
-
-#     print(len(ll)) 
-
-
-
-#     #--------------------------------------------------
-
-#     from selenium import webdriver
-#     import time
-#     path = r'C:\\Users\\Sx\\Documents\\chromedriver_win32\\chromedriver.exe'
-#     # browser = webdriver.Chrome(executable_path = path)
-
-
-
-
-
-#     count = 1
-#     for link in ll:
-
-        
-#         print("Working on Page {0} Product {1}".format(pageNo,count))
-#         count += 1
-
-#     # link = "https://www.fragrancenet.com/perfume/coach/coach/eau-de-parfum#289429"
-
-#         browser = webdriver.Chrome(executable_path = path)
-#         browser.get(link)
-
-    
-
-#         titlesPerPage = []
-#         brandsPerPage = []
-#         imgUrlsPerPage = []
-#         retailsPerPage = []
-#         pricesPerPage = []
-#         sizesPerPage = []
-#         descsPerPage = []
-#         urlsPerPage = []
-        
-#         sizesBox = browser.find_elements_by_class_name("variantText")
-#             #for size in sizesBox:
-#             #size.click()
-#         sizeLen = len(sizesBox)
-#         for sizee in sizesBox:
-#             browser.execute_script("window.scrollTo(0, 400)") 
-
-#             sizee.click()
-
-#             try:
-#                 size = browser.find_element_by_id('variantInfo')
-#                 print(size.text)
-#                 sizesPerPage.append(size.text)
-
-#             except:
-#                 sizesPerPage.append(" ")
-            
-#             try:
-#                 retailPrice = browser.find_elements_by_id("retailprice")
-#                 print(retailPrice[1].text)
-#                 retailsPerPage.append(retailPrice[1].text)
-#             except:
-#                 retailsPerPage.append(" ")
-
-#             try:
-#                 price = browser.find_elements_by_class_name("ourPrice")
-#                 print(price[1].find_element_by_class_name("price").text)
-#                 pricesPerPage.append(price[1].find_element_by_class_name("price").text)
-#             except:
-#                 pricesPerPage.append(" ")
-            
-            
-#             try:
-#                 imgUrl = browser.find_element_by_class_name("mainProductImage").get_attribute("src")
-#                 print(imgUrl)
-            
-#                 imgUrlsPerPage.append(imgUrl)
-#             except:
-            
-#                 imgUrlsPerPage.append(" ")
-
-            
-
+        date_picker = WebDriverWait(driver, 15).until(EC.presence_of_element_located((By.CSS_SELECTOR, '#widgetFieldDateRange')))
+        driver.execute_script('arguments[0].click();', date_picker)
         
 
-#             urlsPerPage.append(link)
-
-
-#         try:
-#             title = browser.find_element_by_class_name("productTitle")
-#             print(title.text)
-#             for i in range(0,sizeLen):
-#                 titlesPerPage.append(title.text)
-#         except:
-#             for i in range(0,sizeLen):
-#                 titlesPerPage.append(" ")
-
-#         try:
-#             brand = browser.find_element_by_class_name("uDesigner")
-#             brnd = brand.find_element_by_tag_name("a").text
-#             print(brnd)
-#             for i in range(0,sizeLen):
-#                 brandsPerPage.append(brnd)
-#         except:
-#             for i in range(0,sizeLen):
-#                 brandsPerPage.append(" ")
-
-
-#         #print(imgUrlsPerPage)
-
-
-    
+        start_date =  WebDriverWait(driver, 15).until(EC.presence_of_element_located((By.CSS_SELECTOR, '#startDate')))
+        start_date.clear()
+        start_date.send_keys('01/01/2010')
         
-#         # print(size.text)
-#         # sizesPerPage.append(size.text)
-#         #except:
-#         #    print("asmfkmmfa")
-
-
-
-
-
-#         browser.execute_script("window.scrollTo(0, 1000)") 
-#         time.sleep(4)
-
+        time.sleep(2)
         
+        apply_btn = driver.find_element_by_css_selector('#applyBtn')
+        driver.execute_script('arguments[0].click();', apply_btn)
         
-#         xx  = browser.find_elements_by_tag_name("a")
-#         try:
-#             for i in xx:
-#                 if i.get_attribute("href") == "https://www.fragrancenet.com/#productDescription":
-#                     i.click()
+        time.sleep(3)
+        
+        download_csv_btn = WebDriverWait(driver, 15).until(EC.presence_of_element_located((By.CSS_SELECTOR, '.js-download-data')))
+        driver.execute_script('arguments[0].click();', download_csv_btn)
+    except:
+        print(f'Error downloading | {country_listings[i]}')
+        failedCountryListings.append(country_listings[i])
+        continue
         
 
-#             desc = browser.find_element_by_class_name("lpdesc")
-#             print(desc.text)
-#             for i in range(0,sizeLen):
-#                 descsPerPage.append(desc.text)
-#         except:
-#             for i in range(0,sizeLen):
-#                 descsPerPage.append(" ")
+#---------------------------------------------------------------
+print("Downloading Failed Countries")
 
-    
-#         browser.close()
-    
+if len(failedCountryListings) == 0:
+    driver.close()
+    print("No Failed Countries")
+    exit()
 
-#     #--------------------
+for i in range(len(failedCountryListings)):
+    try:
+        print(f'On failed country listings index => {i}')
+        driver.get(f'https://www.investing.com{failedCountryListings[i]}')
 
-#         womenFragnence = open("uniFrag.csv","a+")
-#         for a,b,c,d,e,f,g,h in zip(urlsPerPage, titlesPerPage,brandsPerPage,sizesPerPage,pricesPerPage,retailsPerPage,imgUrlsPerPage,descsPerPage):
-#             womenFragnence.write("{0},{1},{2},{3},{4},{5},{6},{7}\n".format(a,b,c,d,e,f,g,h))
-#     womenFragnence.close() 
+        historical_data_btn = WebDriverWait(driver, 15).until(EC.presence_of_element_located((By.CSS_SELECTOR, '#pairSublinksLevel2 a')))
+        driver.execute_script('arguments[0].click();', historical_data_btn)
+        
+        date_picker = WebDriverWait(driver, 15).until(EC.presence_of_element_located((By.CSS_SELECTOR, '#widgetFieldDateRange')))
+        driver.execute_script('arguments[0].click();', date_picker)
+        
+        start_date =  WebDriverWait(driver, 15).until(EC.presence_of_element_located((By.CSS_SELECTOR, '#startDate')))
+        start_date.clear()
+        start_date.send_keys('01/01/1970')
+        
+        time.sleep(2)
+        
+        apply_btn = driver.find_element_by_css_selector('#applyBtn')
+        driver.execute_script('arguments[0].click();', apply_btn)
+        
+        time.sleep(3)
+        
+        download_csv_btn = WebDriverWait(driver, 15).until(EC.presence_of_element_located((By.CSS_SELECTOR, '.js-download-data')))
+        driver.execute_script('arguments[0].click();', download_csv_btn)
 
-#     pageNo += 1
 
 
-# exit()
+        #-------------------Double
+            
+        date_picker = WebDriverWait(driver, 15).until(EC.presence_of_element_located((By.CSS_SELECTOR, '#widgetFieldDateRange')))
+        driver.execute_script('arguments[0].click();', date_picker)
+        
+
+        start_date =  WebDriverWait(driver, 15).until(EC.presence_of_element_located((By.CSS_SELECTOR, '#startDate')))
+        start_date.clear()
+        start_date.send_keys('01/01/2010')
+        
+        time.sleep(2)
+        
+        apply_btn = driver.find_element_by_css_selector('#applyBtn')
+        driver.execute_script('arguments[0].click();', apply_btn)
+        
+        time.sleep(3)
+        
+        download_csv_btn = WebDriverWait(driver, 15).until(EC.presence_of_element_located((By.CSS_SELECTOR, '.js-download-data')))
+        driver.execute_script('arguments[0].click();', download_csv_btn)
+    except:
+        
+  
+        continue
 
 
-
-
-
+driver.close()
